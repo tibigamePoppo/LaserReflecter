@@ -2,30 +2,26 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Laser : MonoBehaviour
+public class LaserEffect : MonoBehaviour
 {
     [SerializeField]
     LineRenderer lineOfSight;
     [SerializeField]
     int reflections;
     [SerializeField]
-    float MaxRayDistance;
+    float MaxRayDistance = 20f;
     [SerializeField]
     LayerMask layerDetection;
-    public float rotationSpeed;
+    [SerializeField]
+    private float width = 0.1f;
     void Start()
     {
         Physics2D.queriesStartInColliders = false;
-    }
-
-    void FixedUpdate()
-    {
-        transform.Rotate(rotationSpeed * Vector3.forward * Time.deltaTime);
-
         lineOfSight.positionCount = 1;
         lineOfSight.SetPosition(0, transform.position);
+        lineOfSight.SetWidth(width, width);
 
-        RaycastHit2D hitInfo = Physics2D.Raycast(transform.position, transform.right, MaxRayDistance, layerDetection);
+        RaycastHit2D hitInfo = Physics2D.Raycast(transform.position, transform.up, MaxRayDistance, layerDetection);
 
         bool isMirror = false;
         Vector2 mirrorHitPoint = Vector2.zero;
@@ -41,11 +37,11 @@ public class Laser : MonoBehaviour
                 lineOfSight.SetPosition(lineOfSight.positionCount - 1, hitInfo.point);
 
                 isMirror = false;
-                if (hitInfo.collider.CompareTag("ReflectPlatform") )
+                if (hitInfo.collider.CompareTag("ReflectPlatform"))
                 {
                     mirrorHitPoint = hitInfo.point;
                     mirrorHitNormal = hitInfo.normal;
-                    hitInfo = Physics2D.Raycast(hitInfo.point , Vector2.Reflect(hitInfo.point , hitInfo.normal), MaxRayDistance, layerDetection);
+                    hitInfo = Physics2D.Raycast(hitInfo.point, Vector2.Reflect(hitInfo.point- new Vector2(transform.position.x, transform.position.y), hitInfo.normal), MaxRayDistance, layerDetection);
                     isMirror = true;
                 }
                 else
@@ -60,10 +56,21 @@ public class Laser : MonoBehaviour
                 }
                 else
                 {
-                    lineOfSight.SetPosition(lineOfSight.positionCount - 1, transform.position + transform.right * MaxRayDistance);
+                    lineOfSight.SetPosition(lineOfSight.positionCount - 1, transform.position + transform.up * MaxRayDistance);
                     break;
                 }
             }
         }
+        StartCoroutine(thining());
+    }
+
+    IEnumerator thining()
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            yield return new WaitForSeconds(0.02f);
+            lineOfSight.SetWidth(width - width / (20 - i), width - width / (20 - i));
+        }
+        Destroy(gameObject);
     }
 }
